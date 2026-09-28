@@ -1,0 +1,6 @@
+{
+  "name": "Rewardly",
+  "description": "Production-ready verified rewards and earnings platform featuring authentic rewarded activities, daily streaks, referrals, secure ledger wallet, fraud detection, and administrative controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

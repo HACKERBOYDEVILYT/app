@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Rewardly</string>
+    <string name="tagline">Premium Verified Rewards Platform</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_earn">Earn</string>
+    <string name="tab_wallet">Wallet</string>
+    <string name="tab_withdraw">Withdraw</string>
+    <string name="tab_referrals">Referrals</string>
+    <string name="tab_profile">Profile</string>
+    <string name="tab_admin">Admin</string>
+</resources>
