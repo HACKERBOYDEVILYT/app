@@ -122,3 +122,21 @@ data class CampaignEntity(
     val completionsCount: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "ads_accounts")
+data class AdsAccountEntity(
+    @PrimaryKey val id: String,
+    val networkName: String, // Google AdMob, Unity Ads, AppLovin MAX, Start.io, IronSource, Custom
+    val accountLabel: String,
+    val appId: String,
+    val rewardedUnitId: String,
+    val interstitialUnitId: String = "",
+    val bannerUnitId: String = "",
+    val rewardPerAd: Double = 0.50,
+    val isEnabled: Boolean = true,
+    val testMode: Boolean = false,
+    val notes: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+)
+

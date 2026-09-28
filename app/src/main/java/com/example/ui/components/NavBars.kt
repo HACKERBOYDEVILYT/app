@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.UserEntity
 import com.example.data.local.entity.WalletEntity
 import com.example.ui.theme.EmeraldGreen
+import com.example.ui.util.AppLanguage
 import com.example.ui.viewmodel.AppScreen
 import java.util.Locale
 
@@ -32,9 +33,14 @@ fun RewardlyTopBar(
     wallet: WalletEntity?,
     unreadNotifs: Int,
     currentScreen: AppScreen,
+    language: AppLanguage = AppLanguage.BANGLA,
     onNotificationsClick: () -> Unit,
-    onRoleSwitchClick: () -> Unit
+    onRoleSwitchClick: () -> Unit,
+    onToggleLanguage: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
+    val isBn = language == AppLanguage.BANGLA
+
     TopAppBar(
         title = {
             Row(
@@ -57,7 +63,7 @@ fun RewardlyTopBar(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "REWARDLY",
+                            text = if (isBn) "রিওয়ার্ডলি" else "REWARDLY",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 1.sp
@@ -71,14 +77,18 @@ fun RewardlyTopBar(
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "VERIFIED",
+                                text = if (isBn) "ভেরিফাইড" else "VERIFIED",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
                                 color = EmeraldGreen
                             )
                         }
                     }
                     Text(
-                        text = if (user?.role == "SUPER_ADMIN" || user?.role == "ADMIN") "Super Admin Console" else "Legitimate Rewards Platform",
+                        text = if (user?.role == "SUPER_ADMIN" || user?.role == "ADMIN") {
+                            if (isBn) "সুপার অ্যাডমিন কনসোল" else "Super Admin Console"
+                        } else {
+                            if (isBn) "আসল রিওয়ার্ড প্ল্যাটফর্ম" else "Legitimate Rewards Platform"
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -92,7 +102,7 @@ fun RewardlyTopBar(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier
-                        .padding(end = 6.dp)
+                        .padding(end = 4.dp)
                         .testTag("top_bar_balance_chip")
                 ) {
                     Row(
@@ -115,6 +125,24 @@ fun RewardlyTopBar(
                 }
             }
 
+            // Language Switcher button
+            IconButton(
+                onClick = onToggleLanguage,
+                modifier = Modifier.testTag("top_bar_lang_toggle")
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                ) {
+                    Text(
+                        text = if (isBn) "EN" else "বাং",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             // Notification Bell with Badge
             IconButton(
                 onClick = onNotificationsClick,
@@ -134,7 +162,7 @@ fun RewardlyTopBar(
                 }
             }
 
-            // Role Switcher Button
+            // Role Switcher / Admin Button
             IconButton(
                 onClick = onRoleSwitchClick,
                 modifier = Modifier.testTag("top_bar_role_switch_button")
@@ -144,6 +172,21 @@ fun RewardlyTopBar(
                     contentDescription = "Switch Account Perspective",
                     tint = if (user?.role == "SUPER_ADMIN") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
                 )
+            }
+
+            // Logout icon button
+            if (user != null) {
+                IconButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.testTag("top_bar_logout_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = "Log Out",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -156,8 +199,11 @@ fun RewardlyTopBar(
 fun RewardlyBottomBar(
     currentScreen: AppScreen,
     isAdminUser: Boolean,
+    language: AppLanguage = AppLanguage.BANGLA,
     onTabSelected: (AppScreen) -> Unit
 ) {
+    val isBn = language == AppLanguage.BANGLA
+
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 6.dp
@@ -171,7 +217,7 @@ fun RewardlyBottomBar(
                     contentDescription = "Home"
                 )
             },
-            label = { Text("Home", style = MaterialTheme.typography.labelSmall) },
+            label = { Text(if (isBn) "হোম" else "Home", style = MaterialTheme.typography.labelSmall) },
             modifier = Modifier.testTag("nav_tab_home")
         )
         NavigationBarItem(
@@ -183,7 +229,7 @@ fun RewardlyBottomBar(
                     contentDescription = "Earn"
                 )
             },
-            label = { Text("Earn", style = MaterialTheme.typography.labelSmall) },
+            label = { Text(if (isBn) "আয়" else "Earn", style = MaterialTheme.typography.labelSmall) },
             modifier = Modifier.testTag("nav_tab_earn")
         )
         NavigationBarItem(
@@ -195,7 +241,7 @@ fun RewardlyBottomBar(
                     contentDescription = "Wallet"
                 )
             },
-            label = { Text("Wallet", style = MaterialTheme.typography.labelSmall) },
+            label = { Text(if (isBn) "ওয়ালেট" else "Wallet", style = MaterialTheme.typography.labelSmall) },
             modifier = Modifier.testTag("nav_tab_wallet")
         )
         NavigationBarItem(
@@ -207,7 +253,7 @@ fun RewardlyBottomBar(
                     contentDescription = "Withdraw"
                 )
             },
-            label = { Text("Withdraw", style = MaterialTheme.typography.labelSmall) },
+            label = { Text(if (isBn) "উত্তোলন" else "Withdraw", style = MaterialTheme.typography.labelSmall) },
             modifier = Modifier.testTag("nav_tab_withdraw")
         )
         NavigationBarItem(
@@ -219,7 +265,7 @@ fun RewardlyBottomBar(
                     contentDescription = "Referrals"
                 )
             },
-            label = { Text("Referrals", style = MaterialTheme.typography.labelSmall) },
+            label = { Text(if (isBn) "রেফারেল" else "Referrals", style = MaterialTheme.typography.labelSmall) },
             modifier = Modifier.testTag("nav_tab_referrals")
         )
         if (isAdminUser) {
@@ -232,7 +278,7 @@ fun RewardlyBottomBar(
                         contentDescription = "Admin"
                     )
                 },
-                label = { Text("Admin", style = MaterialTheme.typography.labelSmall) },
+                label = { Text(if (isBn) "অ্যাডমিন" else "Admin", style = MaterialTheme.typography.labelSmall) },
                 modifier = Modifier.testTag("nav_tab_admin")
             )
         } else {
@@ -245,9 +291,10 @@ fun RewardlyBottomBar(
                         contentDescription = "Profile"
                     )
                 },
-                label = { Text("Profile", style = MaterialTheme.typography.labelSmall) },
+                label = { Text(if (isBn) "প্রোফাইল" else "Profile", style = MaterialTheme.typography.labelSmall) },
                 modifier = Modifier.testTag("nav_tab_profile")
             )
         }
     }
 }
+

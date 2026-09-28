@@ -22,9 +22,10 @@ import com.example.data.local.entity.*
         SupportMessageEntity::class,
         FraudEventEntity::class,
         AdminAuditLogEntity::class,
-        CampaignEntity::class
+        CampaignEntity::class,
+        AdsAccountEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun supportDao(): SupportDao
     abstract fun adminDao(): AdminDao
+    abstract fun adsAccountDao(): AdsAccountDao
 
     companion object {
         @Volatile

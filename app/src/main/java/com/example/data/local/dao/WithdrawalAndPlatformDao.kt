@@ -102,3 +102,28 @@ interface AdminDao {
     @Update
     suspend fun updateCampaign(campaign: CampaignEntity)
 }
+
+@Dao
+interface AdsAccountDao {
+    @Query("SELECT * FROM ads_accounts ORDER BY createdAt DESC")
+    fun getAllAdsAccounts(): Flow<List<AdsAccountEntity>>
+
+    @Query("SELECT * FROM ads_accounts WHERE isEnabled = 1")
+    fun getActiveAdsAccounts(): Flow<List<AdsAccountEntity>>
+
+    @Query("SELECT * FROM ads_accounts WHERE id = :id")
+    suspend fun getAdsAccountById(id: String): AdsAccountEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdate(account: AdsAccountEntity)
+
+    @Delete
+    suspend fun delete(account: AdsAccountEntity)
+
+    @Query("DELETE FROM ads_accounts WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("UPDATE ads_accounts SET isEnabled = :isEnabled, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun toggleEnabled(id: String, isEnabled: Boolean, updatedAt: Long = System.currentTimeMillis())
+}
+

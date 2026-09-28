@@ -11,8 +11,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
+import java.util.UUID
+
+const val ADMIN_MASTER_PASSWORD = "robiul1000"
 
 enum class AppScreen {
+    AUTH,
     HOME,
     EARN,
     WALLET,
@@ -28,6 +32,7 @@ enum class AdminSubTab {
     OVERVIEW,
     USERS,
     ACTIVITIES,
+    ADS_ACCOUNTS,
     WITHDRAWALS,
     CAMPAIGNS,
     FRAUD,
@@ -50,7 +55,7 @@ class RewardlyViewModel(
     private val repository: RewardlyRepository
 ) : ViewModel() {
 
-    private val _currentScreen = MutableStateFlow(AppScreen.HOME)
+    private val _currentScreen = MutableStateFlow(AppScreen.AUTH)
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
 
     private val _adminSubTab = MutableStateFlow(AdminSubTab.OVERVIEW)
@@ -67,6 +72,10 @@ class RewardlyViewModel(
     val unreadNotifCount = repository.unreadNotifCount
     val userTickets = repository.userTickets
 
+    // Ads Accounts streams
+    val allAdsAccounts = repository.allAdsAccounts
+    val activeAdsAccounts = repository.activeAdsAccounts
+
     // Admin streams
     val allUsers = repository.allUsers
     val allWithdrawals = repository.allWithdrawals
@@ -75,6 +84,17 @@ class RewardlyViewModel(
     val allCampaigns = repository.allCampaigns
     val totalRewardsIssued = repository.totalRewardsIssued
     val pendingWithdrawalsCount = repository.pendingWithdrawalsCount
+
+    // Language State (Defaults to Bangla!)
+    private val _currentLanguage = MutableStateFlow(com.example.ui.util.AppLanguage.BANGLA)
+    val currentLanguage: StateFlow<com.example.ui.util.AppLanguage> = _currentLanguage.asStateFlow()
+
+    fun toggleLanguage() {
+        val next = if (_currentLanguage.value == com.example.ui.util.AppLanguage.BANGLA) com.example.ui.util.AppLanguage.ENGLISH else com.example.ui.util.AppLanguage.BANGLA
+        _currentLanguage.value = next
+        com.example.ui.util.Strings.currentLanguage = next
+        showToast(if (next == com.example.ui.util.AppLanguage.BANGLA) "ভাষা বাংলা সেট করা হয়েছে" else "Language set to English")
+    }
 
     // Daily Claim State
     private val _isDailyClaimedToday = MutableStateFlow(false)
@@ -132,6 +152,83 @@ class RewardlyViewModel(
         }
     }
 
+    // Authentication & Role Management
+    fun verifyAdminPassword(password: String): Boolean {
+        return password.trim() == ADMIN_MASTER_PASSWORD
+    }
+
+    fun loginAdminWithPassword(
+        password: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        if (password.trim() == ADMIN_MASTER_PASSWORD) {
+            viewModelScope.launch {
+                repository.switchToDemoAdmin()
+                _currentScreen.value = AppScreen.ADMIN_PANEL
+                showToast("অ্যাডমিন প্যানেলে স্বাগতম! (Super Admin Logged In)")
+                onSuccess()
+            }
+        } else {
+            val errorMsg = "ভুল অ্যাডমিন পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন।"
+            showToast(errorMsg)
+            onError(errorMsg)
+        }
+    }
+
+    fun loginAsDemoUser() {
+        viewModelScope.launch {
+            repository.switchToDemoUser()
+            _currentScreen.value = AppScreen.HOME
+            refreshDailyStreak()
+            showToast("Welcome back, Alex Johnson!")
+        }
+    }
+
+    fun loginUser(identifier: String, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val user = repository.loginAsUser(identifier)
+                _currentScreen.value = AppScreen.HOME
+                refreshDailyStreak()
+                showToast("Welcome back, ${user.displayName}!")
+            } catch (e: Exception) {
+                val msg = e.message ?: "Login failed"
+                showToast(msg)
+                onError(msg)
+            }
+        }
+    }
+
+    fun registerUser(
+        displayName: String,
+        email: String,
+        username: String,
+        refCode: String?,
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                val user = repository.registerUser(displayName, email, username, refCode)
+                _currentScreen.value = AppScreen.HOME
+                refreshDailyStreak()
+                showToast("Account created! Welcome to Rewardly, ${user.displayName}!")
+            } catch (e: Exception) {
+                val msg = e.message ?: "Registration failed"
+                showToast(msg)
+                onError(msg)
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+            _currentScreen.value = AppScreen.AUTH
+            showToast("সফলভাবে লগআউট হয়েছেন (Logged out)")
+        }
+    }
+
     fun switchUserRole(role: String) {
         viewModelScope.launch {
             if (role == "ADMIN") {
@@ -144,6 +241,73 @@ class RewardlyViewModel(
                 showToast("Switched to Alex Johnson (Verified Earner)")
             }
             refreshDailyStreak()
+        }
+    }
+
+    // Ads Accounts Management
+    fun addAdsAccount(
+        networkName: String,
+        accountLabel: String,
+        appId: String,
+        rewardedUnitId: String,
+        interstitialUnitId: String = "",
+        rewardPerAd: Double = 0.50,
+        isEnabled: Boolean = true,
+        notes: String = ""
+    ) {
+        viewModelScope.launch {
+            try {
+                val account = AdsAccountEntity(
+                    id = "ad_" + UUID.randomUUID().toString().substring(0, 8),
+                    networkName = networkName,
+                    accountLabel = accountLabel,
+                    appId = appId,
+                    rewardedUnitId = rewardedUnitId,
+                    interstitialUnitId = interstitialUnitId,
+                    rewardPerAd = rewardPerAd,
+                    isEnabled = isEnabled,
+                    notes = notes,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                )
+                repository.addOrUpdateAdsAccount(account)
+                showToast("Ads Account '$accountLabel' added successfully!")
+            } catch (e: Exception) {
+                showToast(e.message ?: "Failed to add ads account")
+            }
+        }
+    }
+
+    fun updateAdsAccount(account: AdsAccountEntity) {
+        viewModelScope.launch {
+            try {
+                repository.addOrUpdateAdsAccount(account.copy(updatedAt = System.currentTimeMillis()))
+                showToast("Ads Account updated successfully.")
+            } catch (e: Exception) {
+                showToast(e.message ?: "Failed to update ads account")
+            }
+        }
+    }
+
+    fun toggleAdsAccount(id: String, isEnabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                repository.toggleAdsAccount(id, isEnabled)
+                showToast(if (isEnabled) "Ads Account enabled." else "Ads Account disabled.")
+            } catch (e: Exception) {
+                showToast(e.message ?: "Failed to update ads status")
+            }
+        }
+    }
+
+    fun deleteAdsAccount(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteAdsAccount(id)
+                showToast("Ads Account removed.")
+            } catch (e: Exception) {
+                showToast(e.message ?: "Failed to delete ads account")
+            }
         }
     }
 

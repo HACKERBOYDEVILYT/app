@@ -9,15 +9,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.data.local.AppDatabase
 import com.example.data.local.DatabaseInitializer
 import com.example.data.repository.RewardlyRepository
 import com.example.ui.components.ActivityVerificationModal
+import com.example.ui.components.AdminPasswordDialog
 import com.example.ui.components.RewardlyBottomBar
 import com.example.ui.components.RewardlyTopBar
 import com.example.ui.screens.admin.AdminScreen
+import com.example.ui.screens.auth.AuthScreen
 import com.example.ui.screens.earn.EarnScreen
 import com.example.ui.screens.home.HomeScreen
 import com.example.ui.screens.notifications.NotificationsScreen
@@ -27,6 +30,7 @@ import com.example.ui.screens.support.SupportScreen
 import com.example.ui.screens.wallet.WalletScreen
 import com.example.ui.screens.withdraw.WithdrawScreen
 import com.example.ui.theme.RewardlyTheme
+import com.example.ui.viewmodel.ADMIN_MASTER_PASSWORD
 import com.example.ui.viewmodel.AdminSubTab
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.RewardlyViewModel
@@ -64,6 +68,7 @@ class MainActivity : ComponentActivity() {
 fun RewardlyApp(viewModel: RewardlyViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
     val adminSubTab by viewModel.adminSubTab.collectAsStateWithLifecycle()
+    val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle(initialValue = null)
     val currentWallet by viewModel.currentWallet.collectAsStateWithLifecycle(initialValue = null)
     val transactions by viewModel.userTransactions.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -78,6 +83,9 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
     val activeSession by viewModel.activeSession.collectAsStateWithLifecycle()
     val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
 
+    // Ads Accounts stream
+    val allAdsAccounts by viewModel.allAdsAccounts.collectAsStateWithLifecycle(initialValue = emptyList())
+
     // Admin streams
     val allUsers by viewModel.allUsers.collectAsStateWithLifecycle(initialValue = emptyList())
     val allWithdrawals by viewModel.allWithdrawals.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -91,6 +99,7 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
     val ticketMessages by viewModel.selectedTicketMessages.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val snackbarHostState = remember { SnackbarHostState() }
+    var showAdminPasswordDialog by remember { mutableStateOf(false) }
 
     // Handle Toast snackbar messages
     LaunchedEffect(toastMessage) {
@@ -101,7 +110,7 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
     }
 
     // Handle back button on secondary screens
-    BackHandler(enabled = currentScreen != AppScreen.HOME) {
+    BackHandler(enabled = currentScreen != AppScreen.HOME && currentScreen != AppScreen.AUTH) {
         if (currentScreen == AppScreen.SUPPORT && selectedTicketId != null) {
             viewModel.selectTicket(null)
         } else {
@@ -110,32 +119,37 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
     }
 
     val isAdminUser = currentUser?.role in listOf("SUPER_ADMIN", "ADMIN")
+    val isAuthScreen = currentScreen == AppScreen.AUTH
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            if (currentScreen != AppScreen.NOTIFICATIONS && currentScreen != AppScreen.SUPPORT) {
+            if (!isAuthScreen && currentScreen != AppScreen.NOTIFICATIONS && currentScreen != AppScreen.SUPPORT) {
                 RewardlyTopBar(
                     user = currentUser,
                     wallet = currentWallet,
                     unreadNotifs = unreadNotifs,
                     currentScreen = currentScreen,
+                    language = currentLanguage,
                     onNotificationsClick = { viewModel.setScreen(AppScreen.NOTIFICATIONS) },
+                    onToggleLanguage = { viewModel.toggleLanguage() },
+                    onLogoutClick = { viewModel.logout() },
                     onRoleSwitchClick = {
                         if (currentUser?.role == "SUPER_ADMIN" || currentUser?.role == "ADMIN") {
                             viewModel.switchUserRole("USER")
                         } else {
-                            viewModel.switchUserRole("ADMIN")
+                            showAdminPasswordDialog = true
                         }
                     }
                 )
             }
         },
         bottomBar = {
-            if (currentScreen != AppScreen.NOTIFICATIONS && currentScreen != AppScreen.SUPPORT) {
+            if (!isAuthScreen && currentScreen != AppScreen.NOTIFICATIONS && currentScreen != AppScreen.SUPPORT) {
                 RewardlyBottomBar(
                     currentScreen = currentScreen,
                     isAdminUser = isAdminUser,
+                    language = currentLanguage,
                     onTabSelected = { screen -> viewModel.setScreen(screen) }
                 )
             }
@@ -145,9 +159,19 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(if (isAuthScreen) PaddingValues(0.dp) else innerPadding)
         ) {
             when (currentScreen) {
+                AppScreen.AUTH -> {
+                    AuthScreen(
+                        language = currentLanguage,
+                        onToggleLanguage = { viewModel.toggleLanguage() },
+                        onLoginDemoUser = { viewModel.loginAsDemoUser() },
+                        onLoginUser = { identifier -> viewModel.loginUser(identifier) },
+                        onRegisterUser = { name, email, uname, ref -> viewModel.registerUser(name, email, uname, ref) },
+                        onLoginAdmin = { pwd -> viewModel.loginAdminWithPassword(pwd) }
+                    )
+                }
                 AppScreen.HOME -> {
                     HomeScreen(
                         user = currentUser,
@@ -195,8 +219,17 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
                 AppScreen.PROFILE -> {
                     ProfileScreen(
                         user = currentUser,
+                        language = currentLanguage,
                         onNavigate = { screen -> viewModel.setScreen(screen) },
-                        onSwitchRole = { role -> viewModel.switchUserRole(role) }
+                        onToggleLanguage = { viewModel.toggleLanguage() },
+                        onLogout = { viewModel.logout() },
+                        onSwitchRole = { role ->
+                            if (role == "ADMIN") {
+                                showAdminPasswordDialog = true
+                            } else {
+                                viewModel.switchUserRole("USER")
+                            }
+                        }
                     )
                 }
                 AppScreen.NOTIFICATIONS -> {
@@ -231,6 +264,7 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
                             fraudEvents = allFraudEvents,
                             auditLogs = allAuditLogs,
                             totalRewardsIssued = totalRewardsIssued ?: 0.0,
+                            adsAccounts = allAdsAccounts,
                             onTabSelected = { tab -> viewModel.setAdminSubTab(tab) },
                             onApproveWithdrawal = { id -> viewModel.adminApproveWithdrawal(id, currentUser!!) },
                             onRejectWithdrawal = { id, reason -> viewModel.adminRejectWithdrawal(id, reason, currentUser!!) },
@@ -240,6 +274,11 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
                             onCreateActivity = { act -> viewModel.adminCreateActivity(act, currentUser!!) },
                             onCreateCampaign = { camp -> viewModel.adminCreateCampaign(camp, currentUser!!) },
                             onResolveFraud = { id -> viewModel.adminResolveFraud(id, currentUser!!) },
+                            onAddAdsAccount = { net, label, app, rew, inter, rate, enabled ->
+                                viewModel.addAdsAccount(net, label, app, rew, inter, rate, enabled)
+                            },
+                            onToggleAdsAccount = { id, enabled -> viewModel.toggleAdsAccount(id, enabled) },
+                            onDeleteAdsAccount = { id -> viewModel.deleteAdsAccount(id) },
                             onShowToast = { msg -> viewModel.showToast(msg) }
                         )
                     }
@@ -252,6 +291,18 @@ fun RewardlyApp(viewModel: RewardlyViewModel) {
                     session = session,
                     onVerifyClick = { viewModel.completeAndVerifyActivity() },
                     onDismiss = { viewModel.dismissActivityModal() }
+                )
+            }
+
+            // Admin Master Password Dialog
+            if (showAdminPasswordDialog) {
+                AdminPasswordDialog(
+                    language = currentLanguage,
+                    onDismiss = { showAdminPasswordDialog = false },
+                    onSuccess = {
+                        showAdminPasswordDialog = false
+                        viewModel.loginAdminWithPassword(ADMIN_MASTER_PASSWORD)
+                    }
                 )
             }
         }

@@ -25,14 +25,20 @@ import com.example.data.local.entity.UserEntity
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.EmeraldGreen
 import com.example.ui.theme.PrimaryBlue
+import com.example.ui.util.AppLanguage
 import com.example.ui.viewmodel.AppScreen
 
 @Composable
 fun ProfileScreen(
     user: UserEntity?,
+    language: AppLanguage = AppLanguage.BANGLA,
     onNavigate: (AppScreen) -> Unit,
-    onSwitchRole: (String) -> Unit
+    onSwitchRole: (String) -> Unit,
+    onToggleLanguage: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
+    val isBn = language == AppLanguage.BANGLA
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -73,7 +79,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = user?.displayName ?: "Earner Profile",
+                        text = user?.displayName ?: if (isBn) "ইউজার প্রোফাইল" else "Earner Profile",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -93,7 +99,7 @@ fun ProfileScreen(
             }
         }
 
-        // 2. Demo Perspective Switcher
+        // 2. Demo Perspective Switcher / Admin Login
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -102,12 +108,13 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Demo Role Switcher (Platform QA)",
+                        text = if (isBn) "রোল পরিবর্তন ও অ্যাডমিন প্রবেশ" else "Role Switcher & Admin Portal",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Test the complete ecosystem as a verified user or switch to Super Admin mode with privileged review tools.",
+                        text = if (isBn) "সাধারণ ইউজার হিসেবে টাস্ক করুন অথবা অ্যাডমিন পাসওয়ার্ড দিয়ে অ্যাডমিন মোডে যান।"
+                               else "Test as a verified earner or authenticate with admin password for Super Admin tools.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -126,7 +133,7 @@ fun ProfileScreen(
                             ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Alex (User)", color = if (user?.role == "USER") Color.White else MaterialTheme.colorScheme.onSurface)
+                            Text(if (isBn) "ইউজার মোড" else "Alex (User)", color = if (user?.role == "USER") Color.White else MaterialTheme.colorScheme.onSurface)
                         }
                         Button(
                             onClick = { onSwitchRole("ADMIN") },
@@ -138,7 +145,7 @@ fun ProfileScreen(
                             ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Sarah (Admin)", color = if (user?.role == "SUPER_ADMIN") Color.White else MaterialTheme.colorScheme.onSurface)
+                            Text(if (isBn) "অ্যাডমিন (robiul1000)" else "Sarah (Admin)", color = if (user?.role == "SUPER_ADMIN") Color.White else MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -154,7 +161,7 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Account Security & Anti-Fraud Health",
+                        text = if (isBn) "অ্যাকাউন্ট নিরাপত্তা ও ফ্রড রেটিং" else "Account Security & Anti-Fraud Health",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -163,24 +170,24 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Risk Score:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${user?.riskScore ?: 10}/100 (Compliant)", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = EmeraldGreen)
+                        Text(if (isBn) "রিস্ক স্কোর:" else "Risk Score:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${user?.riskScore ?: 10}/100 (${if (isBn) "নিরাপদ" else "Compliant"})", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = EmeraldGreen)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("KYC Identity Status:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(if (user?.isKycVerified == true) "Verified Level 2" else "Unverified", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = EmeraldGreen)
+                        Text(if (isBn) "কেওয়াইসি ভেরিফিকেশন:" else "KYC Identity Status:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (user?.isKycVerified == true) (if (isBn) "ভেরিফাইড লেভেল ২" else "Verified Level 2") else (if (isBn) "আনভেরিফাইড" else "Unverified"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = EmeraldGreen)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Country / Jurisdiction:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${user?.country ?: "US"} (${user?.timezone ?: "UTC"})", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                        Text(if (isBn) "দেশ ও টাইমজোন:" else "Country / Jurisdiction:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${user?.country ?: "BD"} (${user?.timezone ?: "Asia/Dhaka"})", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -195,27 +202,42 @@ fun ProfileScreen(
             ) {
                 Column {
                     ProfileMenuItem(
+                        icon = Icons.Default.Language,
+                        title = if (isBn) "ভাষা পরিবর্তন (Language)" else "Switch Language",
+                        subtitle = if (isBn) "বর্তমান ভাষা: বাংলা (English এ যেতে চাপুন)" else "Current: English (Tap for Bangla)",
+                        onClick = onToggleLanguage
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    ProfileMenuItem(
                         icon = Icons.Default.Notifications,
-                        title = "Notifications & Announcements",
-                        subtitle = "Reward alerts, payouts, and system announcements",
+                        title = if (isBn) "নোটিফিকেশন ও ঘোষণা" else "Notifications & Announcements",
+                        subtitle = if (isBn) "রিওয়ার্ড এলার্ট, উত্তোলন স্ট্যাটাস ও আপডেট" else "Reward alerts, payouts, and system announcements",
                         onClick = { onNavigate(AppScreen.NOTIFICATIONS) }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                     ProfileMenuItem(
                         icon = Icons.AutoMirrored.Filled.HelpOutline,
-                        title = "Support Tickets & Helpdesk",
-                        subtitle = "Contact compliance, billing, and technical staff",
+                        title = if (isBn) "হেল্পডেস্ক ও সাপোর্ট টিকিট" else "Support Tickets & Helpdesk",
+                        subtitle = if (isBn) "পেমেন্ট বা অ্যাকাউন্ট সমস্যায় যোগাযোগ করুন" else "Contact compliance, billing, and technical staff",
                         onClick = { onNavigate(AppScreen.SUPPORT) }
                     )
                     if (user?.role in listOf("SUPER_ADMIN", "ADMIN")) {
-                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                         ProfileMenuItem(
                             icon = Icons.Default.AdminPanelSettings,
-                            title = "Admin Management Console",
-                            subtitle = "Access users, audit logs, fraud engine, and reports",
+                            title = if (isBn) "অ্যাডমিন ম্যানেজমেন্ট কনসোল" else "Admin Management Console",
+                            subtitle = if (isBn) "ইউজার, বিজ্ঞাপন অ্যাকাউন্ট, ফ্রড ও রিপোর্ট কন্ট্রোল" else "Access users, ads accounts, fraud engine, and reports",
                             onClick = { onNavigate(AppScreen.ADMIN_PANEL) }
                         )
                     }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    ProfileMenuItem(
+                        icon = Icons.Default.Logout,
+                        title = if (isBn) "লগআউট করুন" else "Log Out",
+                        subtitle = if (isBn) "বর্তমান সেশন থেকে বের হয়ে যান" else "Sign out of your account",
+                        iconColor = MaterialTheme.colorScheme.error,
+                        onClick = onLogout
+                    )
                 }
             }
         }
@@ -227,6 +249,7 @@ private fun ProfileMenuItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    iconColor: Color? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -249,7 +272,12 @@ private fun ProfileMenuItem(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconColor ?: MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             Column {
                 Text(title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
@@ -259,3 +287,4 @@ private fun ProfileMenuItem(
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+

@@ -45,6 +45,7 @@ fun AdminScreen(
     fraudEvents: List<FraudEventEntity>,
     auditLogs: List<AdminAuditLogEntity>,
     totalRewardsIssued: Double,
+    adsAccounts: List<AdsAccountEntity> = emptyList(),
     onTabSelected: (AdminSubTab) -> Unit,
     onApproveWithdrawal: (String) -> Unit,
     onRejectWithdrawal: (String, String) -> Unit,
@@ -54,6 +55,9 @@ fun AdminScreen(
     onCreateActivity: (EarningActivityEntity) -> Unit,
     onCreateCampaign: (CampaignEntity) -> Unit,
     onResolveFraud: (String) -> Unit,
+    onAddAdsAccount: (networkName: String, label: String, appId: String, rewardedUnitId: String, interstitialUnitId: String, rewardPerAd: Double, isEnabled: Boolean) -> Unit = { _, _, _, _, _, _, _ -> },
+    onToggleAdsAccount: (String, Boolean) -> Unit = { _, _ -> },
+    onDeleteAdsAccount: (String) -> Unit = {},
     onShowToast: (String) -> Unit
 ) {
     val tabs = AdminSubTab.values()
@@ -127,6 +131,14 @@ fun AdminScreen(
                 AdminActivitiesView(
                     activities = activities,
                     onOpenCreate = { showCreateActivityModal = true }
+                )
+            }
+            AdminSubTab.ADS_ACCOUNTS -> {
+                AdsAccountsAdminView(
+                    adsAccounts = adsAccounts,
+                    onAddAdsAccount = onAddAdsAccount,
+                    onToggleAdsAccount = onToggleAdsAccount,
+                    onDeleteAdsAccount = onDeleteAdsAccount
                 )
             }
             AdminSubTab.CAMPAIGNS -> {
@@ -981,7 +993,7 @@ private fun AdminReportsView(
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Financial & Compliance Reconciliation", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                Divider()
+                HorizontalDivider()
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Total Rewards Credited:")
                     Text("$${String.format(Locale.US, "%.2f", totalRewardsIssued)}", fontWeight = FontWeight.Bold)

@@ -534,5 +534,47 @@ object DatabaseInitializer {
                 createdAt = now - (3600000L * 2)
             )
         )
+
+        // 11. Seed Default Ads Accounts
+        val adsAccountDao = database.adsAccountDao()
+        adsAccountDao.insertOrUpdate(
+            AdsAccountEntity(
+                id = "ad_admob_01",
+                networkName = "Google AdMob",
+                accountLabel = "Primary Production AdMob",
+                appId = "ca-app-pub-3940256099942544~3347511713",
+                rewardedUnitId = "ca-app-pub-3940256099942544/5224354917",
+                interstitialUnitId = "ca-app-pub-3940256099942544/1033173712",
+                rewardPerAd = 0.50,
+                isEnabled = true,
+                notes = "High-performing Google AdMob mediation with SSV callbacks."
+            )
+        )
+        adsAccountDao.insertOrUpdate(
+            AdsAccountEntity(
+                id = "ad_unity_02",
+                networkName = "Unity Ads",
+                accountLabel = "Unity Rewarded Video Network",
+                appId = "unity_game_4829104",
+                rewardedUnitId = "rewardedVideo",
+                interstitialUnitId = "interstitialVideo",
+                rewardPerAd = 0.75,
+                isEnabled = true,
+                notes = "Gaming and high-conversion video ads."
+            )
+        )
+        adsAccountDao.insertOrUpdate(
+            AdsAccountEntity(
+                id = "ad_applovin_03",
+                networkName = "AppLovin MAX",
+                accountLabel = "AppLovin Global Mediation",
+                appId = "sdk_applovin_max_88319",
+                rewardedUnitId = "max_rewarded_zone_1",
+                rewardPerAd = 0.60,
+                isEnabled = false,
+                notes = "Backup mediation tier with competitive eCPMs."
+            )
+        )
     }
 }
+

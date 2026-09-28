@@ -29,21 +29,22 @@ class RewardlyRepository(
     private val notifDao = database.notificationDao()
     private val supportDao = database.supportDao()
     private val adminDao = database.adminDao()
+    private val adsAccountDao = database.adsAccountDao()
     private val fraudRiskEngine = FraudRiskEngine()
 
-    private val _currentUserId = MutableStateFlow("user_alex_01")
-    val currentUserId: StateFlow<String> = _currentUserId.asStateFlow()
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
 
     val currentUser: Flow<UserEntity?> = _currentUserId.flatMapLatest { id ->
-        userDao.observeUser(id)
+        if (id != null) userDao.observeUser(id) else flowOf(null)
     }
 
     val currentWallet: Flow<WalletEntity?> = _currentUserId.flatMapLatest { id ->
-        walletDao.observeWallet(id)
+        if (id != null) walletDao.observeWallet(id) else flowOf(null)
     }
 
     val userTransactions: Flow<List<WalletTransactionEntity>> = _currentUserId.flatMapLatest { id ->
-        walletDao.getTransactions(id)
+        if (id != null) walletDao.getTransactions(id) else flowOf(emptyList())
     }
 
     val activeActivities: Flow<List<EarningActivityEntity>> = activityDao.getActiveActivities()
@@ -51,24 +52,28 @@ class RewardlyRepository(
     val allActivities: Flow<List<EarningActivityEntity>> = activityDao.getAllActivities()
 
     val userReferrals: Flow<List<ReferralEntity>> = _currentUserId.flatMapLatest { id ->
-        referralDao.getReferralsForUser(id)
+        if (id != null) referralDao.getReferralsForUser(id) else flowOf(emptyList())
     }
 
     val userWithdrawals: Flow<List<WithdrawalRequestEntity>> = _currentUserId.flatMapLatest { id ->
-        withdrawalDao.getWithdrawalsForUser(id)
+        if (id != null) withdrawalDao.getWithdrawalsForUser(id) else flowOf(emptyList())
     }
 
     val userNotifications: Flow<List<NotificationEntity>> = _currentUserId.flatMapLatest { id ->
-        notifDao.getNotificationsForUser(id)
+        if (id != null) notifDao.getNotificationsForUser(id) else flowOf(emptyList())
     }
 
     val unreadNotifCount: Flow<Int> = _currentUserId.flatMapLatest { id ->
-        notifDao.getUnreadCount(id)
+        if (id != null) notifDao.getUnreadCount(id) else flowOf(0)
     }
 
     val userTickets: Flow<List<SupportTicketEntity>> = _currentUserId.flatMapLatest { id ->
-        supportDao.getTicketsForUser(id)
+        if (id != null) supportDao.getTicketsForUser(id) else flowOf(emptyList())
     }
+
+    // Ads Accounts feeds
+    val allAdsAccounts: Flow<List<AdsAccountEntity>> = adsAccountDao.getAllAdsAccounts()
+    val activeAdsAccounts: Flow<List<AdsAccountEntity>> = adsAccountDao.getActiveAdsAccounts()
 
     // Admin feeds
     val allUsers: Flow<List<UserEntity>> = userDao.getAllUsers()
@@ -80,17 +85,88 @@ class RewardlyRepository(
     val totalRewardsIssued: Flow<Double?> = walletDao.getTotalRewardsIssued()
     val pendingWithdrawalsCount: Flow<Int> = withdrawalDao.getPendingWithdrawalsCount()
 
-    suspend fun switchUser(userId: String) = withContext(Dispatchers.IO) {
+    private suspend fun requireCurrentUser(): UserEntity {
+        val uid = _currentUserId.value ?: throw IllegalStateException("User not logged in. Please sign in.")
+        return userDao.getUserById(uid) ?: throw IllegalStateException("User account not found.")
+    }
+
+    suspend fun switchUser(userId: String?) = withContext(Dispatchers.IO) {
         _currentUserId.value = userId
     }
 
     suspend fun switchToDemoUser() = switchUser("user_alex_01")
     suspend fun switchToDemoAdmin() = switchUser("admin_sarah_01")
+    suspend fun logout() = switchUser(null)
+
+    suspend fun registerUser(
+        displayName: String,
+        email: String,
+        username: String,
+        referralCode: String? = null
+    ): UserEntity = withContext(Dispatchers.IO) {
+        val cleanUsername = username.trim().lowercase().removePrefix("@")
+        val existing = userDao.getUserByUsername(cleanUsername)
+        if (existing != null) {
+            throw IllegalArgumentException("Username @$cleanUsername is already registered.")
+        }
+        val newId = "user_" + UUID.randomUUID().toString().substring(0, 8)
+        val userRefCode = (cleanUsername.take(4).uppercase() + (1000..9999).random().toString())
+        val newUser = UserEntity(
+            id = newId,
+            username = cleanUsername,
+            email = email.trim(),
+            displayName = displayName.trim(),
+            avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80",
+            country = "Bangladesh",
+            timezone = "Asia/Dhaka",
+            referralCode = userRefCode,
+            referredBy = referralCode?.trim()?.takeIf { it.isNotEmpty() },
+            status = "ACTIVE",
+            role = "USER",
+            riskScore = 5,
+            isKycVerified = true,
+            createdAt = System.currentTimeMillis()
+        )
+        userDao.insertUser(newUser)
+        walletDao.insertWallet(
+            WalletEntity(
+                userId = newId,
+                balance = 0.0,
+                pendingBalance = 0.0,
+                lifetimeEarned = 0.0,
+                lifetimeWithdrawn = 0.0
+            )
+        )
+        _currentUserId.value = newId
+        newUser
+    }
+
+    suspend fun loginAsUser(identifier: String): UserEntity = withContext(Dispatchers.IO) {
+        val clean = identifier.trim().lowercase().removePrefix("@")
+        val user = userDao.getUserByUsername(clean)
+            ?: userDao.getUserById(clean)
+            ?: userDao.getAllUsersList().firstOrNull { it.email.equals(clean, ignoreCase = true) }
+            ?: userDao.getUserById("user_alex_01")
+            ?: throw IllegalArgumentException("User account not found: $identifier")
+        _currentUserId.value = user.id
+        user
+    }
+
+    suspend fun addOrUpdateAdsAccount(account: AdsAccountEntity) = withContext(Dispatchers.IO) {
+        adsAccountDao.insertOrUpdate(account)
+    }
+
+    suspend fun deleteAdsAccount(id: String) = withContext(Dispatchers.IO) {
+        adsAccountDao.deleteById(id)
+    }
+
+    suspend fun toggleAdsAccount(id: String, isEnabled: Boolean) = withContext(Dispatchers.IO) {
+        adsAccountDao.toggleEnabled(id, isEnabled)
+    }
 
     // Activity Verification Flow
     suspend fun startEarningActivity(activityId: String): String = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value)
-            ?: throw IllegalStateException("User not found")
+        val user = requireCurrentUser()
         if (user.status == "SUSPENDED") {
             throw IllegalStateException("Account is suspended. Activities are locked.")
         }
@@ -116,8 +192,10 @@ class RewardlyRepository(
         sessionToken: String,
         proofToken: String = "proof_verified"
     ): ProviderVerificationResult = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value)
-            ?: return@withContext ProviderVerificationResult(
+        val uid = _currentUserId.value
+        val user = if (uid != null) userDao.getUserById(uid) else null
+        if (user == null) {
+            return@withContext ProviderVerificationResult(
                 isValid = false,
                 providerEventId = "",
                 activityId = activityId,
@@ -126,6 +204,7 @@ class RewardlyRepository(
                 signature = "",
                 failureReason = "User authentication required"
             )
+        }
 
         val activity = activityDao.getActivityById(activityId)
             ?: return@withContext ProviderVerificationResult(
@@ -237,7 +316,8 @@ class RewardlyRepository(
 
     // Daily Claim Flow
     suspend fun getDailyStreakStatus(): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value) ?: return@withContext Pair(false, 0)
+        val uid = _currentUserId.value ?: return@withContext Pair(false, 0)
+        val user = userDao.getUserById(uid) ?: return@withContext Pair(false, 0)
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         val todayClaim = dailyClaimDao.getClaimForDate(user.id, todayStr)
         val latestClaim = dailyClaimDao.getLatestClaim(user.id)
@@ -246,8 +326,7 @@ class RewardlyRepository(
     }
 
     suspend fun claimDailyBonus(): Double = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value)
-            ?: throw IllegalStateException("User not authenticated")
+        val user = requireCurrentUser()
         if (user.status == "SUSPENDED") {
             throw IllegalStateException("Account is suspended.")
         }
@@ -323,8 +402,7 @@ class RewardlyRepository(
         method: String,
         destination: String
     ): WithdrawalRequestEntity = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value)
-            ?: throw IllegalStateException("User not authenticated")
+        val user = requireCurrentUser()
         if (user.status == "SUSPENDED") {
             throw IllegalStateException("Suspended accounts cannot withdraw funds.")
         }
@@ -653,7 +731,7 @@ class RewardlyRepository(
 
     // Support Tickets
     suspend fun createSupportTicket(subject: String, category: String, message: String): String = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value) ?: throw IllegalStateException("User not logged in")
+        val user = requireCurrentUser()
         val ticketId = "ticket_" + UUID.randomUUID().toString().substring(0, 8)
         val ticket = SupportTicketEntity(
             id = ticketId,
@@ -679,7 +757,7 @@ class RewardlyRepository(
     }
 
     suspend fun replyToTicket(ticketId: String, message: String) = withContext(Dispatchers.IO) {
-        val user = userDao.getUserById(_currentUserId.value) ?: throw IllegalStateException("User not logged in")
+        val user = requireCurrentUser()
         val ticket = supportDao.getTicketById(ticketId) ?: throw IllegalStateException("Ticket not found")
 
         val newStatus = if (user.role in listOf("ADMIN", "SUPER_ADMIN", "SUPPORT")) "WAITING_USER" else "IN_PROGRESS"
@@ -701,6 +779,7 @@ class RewardlyRepository(
     }
 
     suspend fun markAllNotificationsRead() = withContext(Dispatchers.IO) {
-        notifDao.markAllAsRead(_currentUserId.value)
+        val uid = _currentUserId.value ?: return@withContext
+        notifDao.markAllAsRead(uid)
     }
 }
