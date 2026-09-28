@@ -145,7 +145,7 @@ fun ProfileScreen(
                             ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text(if (isBn) "অ্যাডমিন (robiul1000)" else "Sarah (Admin)", color = if (user?.role == "SUPER_ADMIN") Color.White else MaterialTheme.colorScheme.onSurface)
+                            Text(if (isBn) "অ্যাডমিন মোড" else "Admin Mode", color = if (user?.role == "SUPER_ADMIN") Color.White else MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }

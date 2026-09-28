@@ -37,7 +37,7 @@ object Strings {
             "auth_admin_tab" -> if (isBn) "অ্যাডমিন প্রবেশ" else "Admin Portal"
             "email_or_username" -> if (isBn) "ইউজারনেম বা ইমেইল" else "Username or Email"
             "password" -> if (isBn) "পাসওয়ার্ড" else "Password"
-            "admin_password" -> if (isBn) "অ্যাডমিন পাসওয়ার্ড (robiul1000)" else "Admin Password (robiul1000)"
+            "admin_password" -> if (isBn) "অ্যাডমিন পাসওয়ার্ড" else "Admin Password"
             "btn_login" -> if (isBn) "লগইন করুন" else "Sign In"
             "btn_quick_demo" -> if (isBn) "ডেমো ইউজার হিসেবে শুরু করুন" else "Continue as Demo Earner"
             "btn_unlock_admin" -> if (isBn) "অ্যাডমিন প্যানেল আনলক করুন" else "Unlock Admin Console"

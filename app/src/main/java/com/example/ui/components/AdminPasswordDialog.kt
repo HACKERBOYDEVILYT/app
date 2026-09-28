@@ -42,7 +42,7 @@ fun AdminPasswordDialog(
             errorMessage = null
             onSuccess()
         } else {
-            errorMessage = if (isBn) "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড লিখুন (robiul1000)।" else "Incorrect password! Enter valid password (robiul1000)."
+            errorMessage = if (isBn) "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড লিখুন।" else "Incorrect password! Please try again."
         }
     }
 
@@ -84,8 +84,8 @@ fun AdminPasswordDialog(
                 )
 
                 Text(
-                    text = if (isBn) "সুপার অ্যাডমিন প্যানেল এবং বিজ্ঞাপন অ্যাকাউন্ট পরিচালনার জন্য পাসওয়ার্ড দিন। (পাসওয়ার্ড: robiul1000)"
-                           else "Enter master admin password to access Super Admin & Ads configurations (Password: robiul1000)",
+                    text = if (isBn) "সুপার অ্যাডমিন প্যানেল এবং বিজ্ঞাপন অ্যাকাউন্ট পরিচালনার জন্য সিকিউর পাসওয়ার্ড দিন।"
+                           else "Enter master admin password to access Super Admin & Ads configurations.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -97,7 +97,7 @@ fun AdminPasswordDialog(
                         errorMessage = null
                     },
                     label = { Text(if (isBn) "অ্যাডমিন পাসওয়ার্ড" else "Admin Password") },
-                    placeholder = { Text("robiul1000") },
+                    placeholder = { Text("••••••••") },
                     leadingIcon = {
                         Icon(Icons.Default.Lock, contentDescription = null)
                     },

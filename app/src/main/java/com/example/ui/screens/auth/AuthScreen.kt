@@ -392,8 +392,8 @@ fun AuthScreen(
                                 adminPasswordInput = it
                                 adminError = null
                             },
-                            label = { Text(if (isBn) "অ্যাডমিন পাসওয়ার্ড (robiul1000)" else "Admin Password (robiul1000)") },
-                            placeholder = { Text("robiul1000") },
+                            label = { Text(if (isBn) "অ্যাডমিন পাসওয়ার্ড" else "Admin Password") },
+                            placeholder = { Text("••••••••") },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                             trailingIcon = {
                                 IconButton(onClick = { adminPasswordVisible = !adminPasswordVisible }) {
@@ -420,8 +420,8 @@ fun AuthScreen(
                                     if (adminPasswordInput.trim() == ADMIN_MASTER_PASSWORD) {
                                         onLoginAdmin(adminPasswordInput.trim())
                                     } else {
-                                        adminError = if (isBn) "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন (robiul1000)।"
-                                                     else "Incorrect password! Enter robiul1000."
+                                        adminError = if (isBn) "ভুল পাসওয়ার্ড! অনুগ্রহ করে আবার চেষ্টা করুন।"
+                                                     else "Incorrect password! Please try again."
                                     }
                                 }
                             ),
@@ -435,8 +435,8 @@ fun AuthScreen(
                                 if (adminPasswordInput.trim() == ADMIN_MASTER_PASSWORD) {
                                     onLoginAdmin(adminPasswordInput.trim())
                                 } else {
-                                    adminError = if (isBn) "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন (robiul1000)।"
-                                                 else "Incorrect password! Enter robiul1000."
+                                    adminError = if (isBn) "ভুল পাসওয়ার্ড! অনুগ্রহ করে আবার চেষ্টা করুন।"
+                                                 else "Incorrect password! Please try again."
                                 }
                             },
                             modifier = Modifier
@@ -455,7 +455,7 @@ fun AuthScreen(
                             )
                         }
 
-                        // Helper hint
+                        // Security notice (without exposing password)
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -467,14 +467,14 @@ fun AuthScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Info,
+                                    imageVector = Icons.Default.Security,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = if (isBn) "ডিফল্ট অ্যাডমিন পাসওয়ার্ড: robiul1000"
-                                           else "Default Admin Password: robiul1000",
+                                    text = if (isBn) "অ্যাডমিন অ্যাক্সেস শুধুমাত্র অনুমোদিত ব্যক্তিদের জন্য সংরক্ষিত।"
+                                           else "Admin console access is restricted to authorized personnel.",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
